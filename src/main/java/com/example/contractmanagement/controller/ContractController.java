@@ -1,16 +1,15 @@
-package com.example.contractmanagement;
+package com.example.contractmanagement.controller;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+
+import com.example.contractmanagement.model.Contract;
+import com.example.contractmanagement.repository.ContractRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
+
 import java.util.List;
 import java.util.Optional;
 

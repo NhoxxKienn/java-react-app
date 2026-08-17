@@ -1,6 +1,8 @@
-package com.example.contractmanagement;
+package com.example.contractmanagement.config;
 
 
+import com.example.contractmanagement.model.Contract;
+import com.example.contractmanagement.repository.ContractRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

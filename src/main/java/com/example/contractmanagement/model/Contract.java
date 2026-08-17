@@ -1,4 +1,4 @@
-package com.example.contractmanagement;
+package com.example.contractmanagement.model;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

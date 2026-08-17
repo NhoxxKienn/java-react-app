@@ -1,5 +1,8 @@
 package com.example.contractmanagement;
 
+import com.example.contractmanagement.controller.ContractController;
+import com.example.contractmanagement.model.Contract;
+import com.example.contractmanagement.repository.ContractRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
