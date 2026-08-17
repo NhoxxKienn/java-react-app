@@ -1,6 +1,7 @@
 package com.example.contractmanagement.controller;
 
 
+import com.example.contractmanagement.dto.ContractResponse;
 import com.example.contractmanagement.model.Contract;
 import com.example.contractmanagement.repository.ContractRepository;
 import org.springframework.http.ResponseEntity;
@@ -23,13 +24,13 @@ public class ContractController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Contract> findById(@PathVariable Long id) {
+    public ResponseEntity<ContractResponse> findById(@PathVariable Long id) {
         Optional<Contract> contractOptional = contractRepository.findById(id);
-        return contractOptional.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+        return contractOptional.map(ContractResponse::from).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping()
-    public ResponseEntity<List<Contract>> findAll() {
-        return ResponseEntity.ok(contractRepository.findAll());
+    public ResponseEntity<List<ContractResponse>> findAll() {
+        return ResponseEntity.ok(contractRepository.findAll().stream().map(ContractResponse::from).toList());
     }
 }
