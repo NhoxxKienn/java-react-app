@@ -1,8 +1,10 @@
 package com.example.contractmanagement;
 
 import com.example.contractmanagement.controller.ContractController;
+import com.example.contractmanagement.dto.ContractRequest;
+import com.example.contractmanagement.dto.ContractResponse;
 import com.example.contractmanagement.model.Contract;
-import com.example.contractmanagement.repository.ContractRepository;
+import com.example.contractmanagement.service.ContractService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -15,6 +17,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -23,11 +26,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(ContractController.class)
 public class ContractControllerTest {
+
     @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
-    private ContractRepository repository;
+    private ContractService service;
 
     private Contract sampleContract() {
         Contract c = new Contract("Jack Bauer", new BigDecimal("199.99"), LocalDate.of(2026, 1, 1), 24);
@@ -35,9 +39,13 @@ public class ContractControllerTest {
         return c;
     }
 
+    private ContractResponse sampleResponse() {
+        return ContractResponse.from(sampleContract());
+    }
+
     @Test
     void returnsContractWhenFound() throws Exception {
-        given(repository.findById(1L)).willReturn(Optional.of(sampleContract()));
+        given(service.findById(1L)).willReturn(Optional.of(sampleResponse()));
 
         mockMvc.perform(get("/api/contracts/1"))
                 .andExpect(status().isOk())
@@ -49,7 +57,7 @@ public class ContractControllerTest {
 
     @Test
     void returnsNotFoundForUnknownId() throws Exception {
-        given(repository.findById(999L)).willReturn(Optional.empty());
+        given(service.findById(999L)).willReturn(Optional.empty());
 
         mockMvc.perform(get("/api/contracts/999"))
                 .andExpect(status().isNotFound());
@@ -57,7 +65,7 @@ public class ContractControllerTest {
 
     @Test
     void returnsAllContracts() throws Exception {
-        given(repository.findAll()).willReturn(List.of(sampleContract()));
+        given(service.findAll()).willReturn(List.of(sampleResponse()));
 
         mockMvc.perform(get("/api/contracts"))
                 .andExpect(status().isOk())
@@ -68,7 +76,7 @@ public class ContractControllerTest {
 
     @Test
     void returnsEmptyArrayWhenNoContracts() throws Exception {
-        given(repository.findAll()).willReturn(List.of());
+        given(service.findAll()).willReturn(List.of());
 
         mockMvc.perform(get("/api/contracts"))
                 .andExpect(status().isOk())
@@ -78,55 +86,55 @@ public class ContractControllerTest {
 
     @Test
     void shouldCreateANewContract() throws Exception {
-        Contract saved = sampleContract();
-        given(repository.save(any(Contract.class))).willReturn(saved);
+        given(service.create(any(ContractRequest.class))).willReturn(sampleContract());
 
         String payload = """
-                    {
-                        "customer": "Jack Bauer",
-                        "monthlyRate": 199.99,
-                        "start": "2026-01-01",
-                        "termMonths": 24
-                    }
+                {
+                    "customer": "Jack Bauer",
+                    "monthlyRate": 199.99,
+                    "start": "2026-01-01",
+                    "termMonths": 24
+                }
                 """;
 
         mockMvc.perform(post("/api/contracts")
                         .contentType("application/json")
-                .content(payload))
+                        .content(payload))
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", "http://localhost/api/contracts/1"));
     }
 
     @Test
     void rejectsInvalidContract() throws Exception {
-        String payload ="""
-                    {
-                        "customer": "",
-                        "monthlyRate": -50,
-                        "start": "2026-01-01",
-                        "termMonths": 0
-                    }
+        String payload = """
+                {
+                    "customer": "",
+                    "monthlyRate": -50,
+                    "start": "2026-01-01",
+                    "termMonths": 0
+                }
                 """;
+
         mockMvc.perform(post("/api/contracts")
                         .contentType("application/json")
                         .content(payload))
                 .andExpect(status().isBadRequest());
+
+        verify(service, never()).create(any(ContractRequest.class));
     }
 
     @Test
     void updateExistingContract() throws Exception {
-        Contract existing = sampleContract();
-        given(repository.findById(1L)).willReturn(Optional.of(existing));
-        given(repository.save(any(Contract.class))).willReturn(existing);
+        given(service.update(eq(1L), any(ContractRequest.class))).willReturn(true);
 
         String payload = """
-            {
-                "customer": "Kim Palmer",
-                "monthlyRate": 250.00,
-                "start": "2026-03-01",
-                "termMonths": 36
-            }
-            """;
+                {
+                    "customer": "Kim Palmer",
+                    "monthlyRate": 250.00,
+                    "start": "2026-03-01",
+                    "termMonths": 36
+                }
+                """;
 
         mockMvc.perform(put("/api/contracts/1")
                         .contentType("application/json")
@@ -136,16 +144,16 @@ public class ContractControllerTest {
 
     @Test
     void returnsNotFoundWhenUpdatingUnknownId() throws Exception {
-        given(repository.findById(999L)).willReturn(Optional.empty());
+        given(service.update(eq(999L), any(ContractRequest.class))).willReturn(false);
 
         String payload = """
-            {
-                "customer": "Kim Palmer",
-                "monthlyRate": 250.00,
-                "start": "2026-03-01",
-                "termMonths": 36
-            }
-            """;
+                {
+                    "customer": "Kim Palmer",
+                    "monthlyRate": 250.00,
+                    "start": "2026-03-01",
+                    "termMonths": 36
+                }
+                """;
 
         mockMvc.perform(put("/api/contracts/999")
                         .contentType("application/json")
@@ -155,24 +163,19 @@ public class ContractControllerTest {
 
     @Test
     void deleteExistingContract() throws Exception {
-        Contract existing = sampleContract();
-        given(repository.findById(1L)).willReturn(Optional.of(existing));
-        given(repository.save(any(Contract.class))).willReturn(existing);
-        given(repository.existsById(1L)).willReturn(true);
+        given(service.delete(1L)).willReturn(true);
 
         mockMvc.perform(delete("/api/contracts/1"))
                 .andExpect(status().isNoContent());
 
-        verify(repository).deleteById(1L);
+        verify(service).delete(1L);
     }
 
     @Test
     void returnsNotFoundWhenDeletingUnknownId() throws Exception {
-        given(repository.existsById(999L)).willReturn(false);
+        given(service.delete(999L)).willReturn(false);
 
         mockMvc.perform(delete("/api/contracts/999"))
                 .andExpect(status().isNotFound());
-
-        verify(repository, never()).deleteById(999L);
     }
 }

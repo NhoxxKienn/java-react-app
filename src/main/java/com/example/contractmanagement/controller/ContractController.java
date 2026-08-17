@@ -4,7 +4,7 @@ package com.example.contractmanagement.controller;
 import com.example.contractmanagement.dto.ContractResponse;
 import com.example.contractmanagement.dto.ContractRequest;
 import com.example.contractmanagement.model.Contract;
-import com.example.contractmanagement.repository.ContractRepository;
+import com.example.contractmanagement.service.ContractService;
 import jakarta.validation.Valid;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.http.ResponseEntity;
@@ -13,34 +13,31 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/contracts")
 public class ContractController {
-    private final ContractRepository contractRepository;
+    private final ContractService contractService;
 
-    public ContractController(ContractRepository repository) {
-        this.contractRepository = repository;
+    public ContractController(ContractService service) {
+        this.contractService = service;
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ContractResponse> findById(@PathVariable Long id) {
-        Optional<Contract> contractOptional = contractRepository.findById(id);
-        return contractOptional.map(ContractResponse::from).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+        return contractService.findById(id).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping()
     public ResponseEntity<List<ContractResponse>> findAll() {
-        return ResponseEntity.ok(contractRepository.findAll().stream().map(ContractResponse::from).toList());
+        return ResponseEntity.ok(contractService.findAll());
     }
 
     @PostMapping()
     public ResponseEntity<Void> createContract(
             @RequestBody  @Valid ContractRequest contractRequest,
             UriComponentsBuilder ucb) {
-        Contract saved = contractRepository
-                .save(ContractRequest.to(contractRequest));
+        Contract saved = contractService.create(contractRequest);
         URI locationOfNewContract = ucb.path("/api/contracts/{id}")
                 .buildAndExpand(saved.getId()).toUri();
         return ResponseEntity.created(locationOfNewContract).build();
@@ -51,11 +48,7 @@ public class ContractController {
             @PathVariable Long id,
             @RequestBody @Valid ContractRequest request
     ) {
-        Optional<Contract> contractOptional = contractRepository.findById(id);
-        if (contractOptional.isPresent()) {
-            Contract updated = contractOptional.get();
-            updated.update(ContractRequest.to(request));
-            contractRepository.save(updated);
+        if (contractService.update(id, request)) {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.notFound().build();
@@ -63,8 +56,7 @@ public class ContractController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteContract(@PathVariable Long id) {
-        if (contractRepository.existsById(id)) {
-            contractRepository.deleteById(id);
+        if (contractService.delete(id)) {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.notFound().build();
