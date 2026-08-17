@@ -14,10 +14,11 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ContractController.class)
 public class ContractControllerTest {
@@ -72,5 +73,42 @@ public class ContractControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void shouldCreateANewContract() throws Exception {
+        Contract saved = sampleContract();
+        given(repository.save(any(Contract.class))).willReturn(saved);
+
+        String payload = """
+                    {
+                        "customer": "Jack Bauer",
+                        "monthlyRate": 199.99,
+                        "start": "2026-01-01",
+                        "termMonths": 24
+                    }
+                """;
+
+        mockMvc.perform(post("/api/contracts")
+                        .contentType("application/json")
+                .content(payload))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", "http://localhost/api/contracts/1"));
+    }
+
+    @Test
+    void rejectsInvalidContract() throws Exception {
+        String payload ="""
+                    {
+                        "customer": "",
+                        "monthlyRate": -50,
+                        "start": "2026-01-01",
+                        "termMonths": 0
+                    }
+                """;
+        mockMvc.perform(post("/api/contracts")
+                        .contentType("application/json")
+                        .content(payload))
+                .andExpect(status().isBadRequest());
     }
 }
