@@ -1,0 +1,7 @@
+{
+  "id": 42,
+  "customer": "Alice",
+  "monthlyRate": 199.99,
+  "start": "2025-11-20",
+  "termMonths": 10
+}
