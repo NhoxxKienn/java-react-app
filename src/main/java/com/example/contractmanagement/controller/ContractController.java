@@ -2,7 +2,7 @@ package com.example.contractmanagement.controller;
 
 
 import com.example.contractmanagement.dto.ContractResponse;
-import com.example.contractmanagement.dto.CreateContractRequest;
+import com.example.contractmanagement.dto.ContractRequest;
 import com.example.contractmanagement.model.Contract;
 import com.example.contractmanagement.repository.ContractRepository;
 import jakarta.validation.Valid;
@@ -37,12 +37,36 @@ public class ContractController {
 
     @PostMapping()
     public ResponseEntity<Void> createContract(
-            @RequestBody  @Valid CreateContractRequest createContractRequest,
+            @RequestBody  @Valid ContractRequest contractRequest,
             UriComponentsBuilder ucb) {
         Contract saved = contractRepository
-                .save(CreateContractRequest.to(createContractRequest));
+                .save(ContractRequest.to(contractRequest));
         URI locationOfNewContract = ucb.path("/api/contracts/{id}")
                 .buildAndExpand(saved.getId()).toUri();
         return ResponseEntity.created(locationOfNewContract).build();
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Void> updateContract(
+            @PathVariable Long id,
+            @RequestBody @Valid ContractRequest request
+    ) {
+        Optional<Contract> contractOptional = contractRepository.findById(id);
+        if (contractOptional.isPresent()) {
+            Contract updated = contractOptional.get();
+            updated.update(ContractRequest.to(request));
+            contractRepository.save(updated);
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.notFound().build();
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteContract(@PathVariable Long id) {
+        if (contractRepository.existsById(id)) {
+            contractRepository.deleteById(id);
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.notFound().build();
     }
 }

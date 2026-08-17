@@ -9,13 +9,13 @@ import org.jspecify.annotations.NonNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-public record CreateContractRequest(
+public record ContractRequest(
         @NotBlank String customer,
         @Positive BigDecimal monthlyRate,
         @NotNull LocalDate start,
         @Positive int termMonths
 ) {
-    public static Contract to(@NonNull CreateContractRequest request) {
+    public static Contract to(@NonNull ContractRequest request) {
         return new Contract(request.customer, request.monthlyRate, request.start, request.termMonths);
     }
 }

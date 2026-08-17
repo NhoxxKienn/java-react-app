@@ -16,8 +16,9 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ContractController.class)
@@ -110,5 +111,68 @@ public class ContractControllerTest {
                         .contentType("application/json")
                         .content(payload))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateExistingContract() throws Exception {
+        Contract existing = sampleContract();
+        given(repository.findById(1L)).willReturn(Optional.of(existing));
+        given(repository.save(any(Contract.class))).willReturn(existing);
+
+        String payload = """
+            {
+                "customer": "Kim Palmer",
+                "monthlyRate": 250.00,
+                "start": "2026-03-01",
+                "termMonths": 36
+            }
+            """;
+
+        mockMvc.perform(put("/api/contracts/1")
+                        .contentType("application/json")
+                        .content(payload))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void returnsNotFoundWhenUpdatingUnknownId() throws Exception {
+        given(repository.findById(999L)).willReturn(Optional.empty());
+
+        String payload = """
+            {
+                "customer": "Kim Palmer",
+                "monthlyRate": 250.00,
+                "start": "2026-03-01",
+                "termMonths": 36
+            }
+            """;
+
+        mockMvc.perform(put("/api/contracts/999")
+                        .contentType("application/json")
+                        .content(payload))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deleteExistingContract() throws Exception {
+        Contract existing = sampleContract();
+        given(repository.findById(1L)).willReturn(Optional.of(existing));
+        given(repository.save(any(Contract.class))).willReturn(existing);
+        given(repository.existsById(1L)).willReturn(true);
+
+        mockMvc.perform(delete("/api/contracts/1"))
+                .andExpect(status().isNoContent());
+
+        verify(repository).deleteById(1L);
+    }
+
+    @Test
+    void returnsNotFoundWhenDeletingUnknownId() throws Exception {
+        given(repository.existsById(999L)).willReturn(false);
+
+        mockMvc.perform(delete("/api/contracts/999"))
+                .andExpect(status().isNotFound());
+
+        verify(repository, never()).deleteById(999L);
     }
 }

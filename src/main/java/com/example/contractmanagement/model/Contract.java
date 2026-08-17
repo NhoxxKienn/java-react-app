@@ -1,5 +1,6 @@
 package com.example.contractmanagement.model;
 
+import com.example.contractmanagement.dto.ContractRequest;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -26,6 +27,13 @@ public class Contract {
         this.monthlyRate = monthlyRate;
         this.start = start;
         this.termMonths = termMonths;
+    }
+
+    public void update(Contract request) {
+        this.customer = request.getCustomer();
+        this.monthlyRate = request.getMonthlyRate();
+        this.start = request.getStart();
+        this.termMonths = request.getTermMonths();
     }
 
     public void setId(Long id) {
